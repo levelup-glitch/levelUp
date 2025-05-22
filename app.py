@@ -1,9 +1,15 @@
+
 from flask import Flask, request, send_file, jsonify, session
 from flask_cors import CORS
 import yt_dlp
 import os
 import json
 from uuid import uuid4
+
+# Write the cookie file if injected via env var
+if not os.path.exists("cookies.txt") and os.environ.get("COOKIES_TEXT"):
+    with open("cookies.txt", "w") as f:
+        f.write(os.environ["COOKIES_TEXT"])
 
 app = Flask(__name__)
 app.secret_key = os.urandom(24)  # secret key for session
