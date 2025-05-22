@@ -1,27 +1,58 @@
 <!DOCTYPE html>
 <html>
-<head><title>YT Video Downloader</title></head>
+<head>
+  <title>YT Downloader</title>
+</head>
 <body>
-  <h2>🎥 Download YouTube Videos</h2>
-  <input id="url" placeholder="Paste YouTube link here" size="50">
-  <select id="quality">
-    <option value="360">360p</option>
-    <option value="720">720p</option>
-    <option value="1080">1080p</option>
-  </select>
-  <button onclick="download()">Download</button>
+  <h2>🎥 YouTube Downloader + Format Viewer</h2>
+
+  <input id="url" placeholder="Paste YouTube link" size="50">
+  <button onclick="fetchFormats()">🔍 Show Formats</button>
+  <br><br>
+
+  <select id="quality"></select>
+  <button onclick="downloadVideo()">⬇️ Download</button>
   <p id="status"></p>
 
+  <hr>
+  <h3>🕓 Download History (Last 20)</h3>
+  <ul id="historyList"></ul>
+
   <script>
-    async function download() {
-      const url = document.getElementById('url').value;
-      const quality = document.getElementById('quality').value;
-      document.getElementById('status').innerText = "⏳ Downloading...";
+    async function fetchFormats() {
+      const url = document.getElementById("url").value;
+      const res = await fetch('/formats', {
+        method: 'POST',
+        headers: {'Content-Type': 'application/json'},
+        body: JSON.stringify({url})
+      });
+
+      if (!res.ok) {
+        document.getElementById("status").innerText = await res.text();
+        return;
+      }
+
+      const formats = await res.json();
+      const select = document.getElementById("quality");
+      select.innerHTML = "";
+      formats.forEach(f => {
+        const opt = document.createElement("option");
+        opt.value = f.format_id;
+        opt.textContent = `${f.resolution} - ${Math.round((f.filesize || 0)/1024/1024)} MB`;
+        select.appendChild(opt);
+      });
+
+      document.getElementById("status").innerText = `✅ Formats loaded: ${formats.length}`;
+    }
+
+    async function downloadVideo() {
+      const url = document.getElementById("url").value;
+      const quality = document.getElementById("quality").value;
 
       const res = await fetch('/download', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ url, quality })
+        headers: {'Content-Type': 'application/json'},
+        body: JSON.stringify({url, quality})
       });
 
       if (res.ok) {
@@ -30,12 +61,26 @@
         a.href = URL.createObjectURL(blob);
         a.download = "video.mp4";
         a.click();
-        document.getElementById('status').innerText = "✅ Done!";
+        document.getElementById("status").innerText = "✅ Download complete";
+        loadHistory();
       } else {
-        const error = await res.text();
-        document.getElementById('status').innerText = "❌ Error: " + error;
+        document.getElementById("status").innerText = await res.text();
       }
     }
+
+    async function loadHistory() {
+      const res = await fetch('/history');
+      const list = await res.json();
+      const ul = document.getElementById("historyList");
+      ul.innerHTML = "";
+      list.reverse().forEach(item => {
+        const li = document.createElement("li");
+        li.textContent = `${item.title} — ${item.resolution}p — ${item.size_MB} MB`;
+        ul.appendChild(li);
+      });
+    }
+
+    loadHistory();
   </script>
 </body>
 </html>
