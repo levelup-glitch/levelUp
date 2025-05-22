@@ -5,16 +5,15 @@ import os
 import json
 from uuid import uuid4
 
-
 app = Flask(__name__)
-app.secret_key = os.urandom(24)  # Used to store secure session cookies
+app.secret_key = os.urandom(24)  # secret key for session
 CORS(app)
 
-
-# Ensure history file exists
-if not os.path.exists(HISTORY_FILE):
-    with open(HISTORY_FILE, 'w') as f:
-        json.dump([], f)
+# Return unique history file for each user
+def get_history_file():
+    if 'uid' not in session:
+        session['uid'] = str(uuid4())
+    return f"history_{session['uid']}.json"
 
 @app.route('/')
 def home():
@@ -25,6 +24,9 @@ def get_formats():
     data = request.get_json()
     url = data['url']
     ydl_opts = {'quiet': True}
+
+    if os.path.exists("cookies.txt"):
+        ydl_opts['cookiefile'] = 'cookies.txt'
 
     try:
         with yt_dlp.YoutubeDL(ydl_opts) as ydl:
@@ -51,27 +53,36 @@ def download():
     output_file = 'video.%(ext)s'
 
     ydl_opts = {
-        'format': f'bestvideo[height<={quality}]+bestaudio/best',
+        'format': quality,
         'outtmpl': output_file,
         'merge_output_format': 'mp4',
-        'quiet': True
+        'quiet': True,
     }
+
+    if os.path.exists("cookies.txt"):
+        ydl_opts['cookiefile'] = 'cookies.txt'
 
     try:
         with yt_dlp.YoutubeDL(ydl_opts) as ydl:
             info = ydl.extract_info(url, download=True)
             filename = ydl.prepare_filename(info).replace('.webm', '.mp4').replace('.mkv', '.mp4')
 
-            # Add to history
-            with open(HISTORY_FILE, 'r') as f:
-                history = json.load(f)
+            # Save to per-user history
+            history_file = get_history_file()
+            history = []
+
+            if os.path.exists(history_file):
+                with open(history_file, 'r') as f:
+                    history = json.load(f)
+
             history.append({
                 "title": info.get("title"),
                 "resolution": quality,
-                "size_MB": round(os.path.getsize(filename)/1024/1024, 2)
+                "size_MB": round(os.path.getsize(filename) / 1024 / 1024, 2)
             })
-            with open(HISTORY_FILE, 'w') as f:
-                json.dump(history[-20:], f)  # Limit to last 20
+
+            with open(history_file, 'w') as f:
+                json.dump(history[-20:], f)
 
             return send_file(filename, as_attachment=True)
     except Exception as e:
@@ -79,10 +90,12 @@ def download():
 
 @app.route('/history')
 def get_history():
-    with open(HISTORY_FILE, 'r') as f:
-        return jsonify(json.load(f))
+    history_file = get_history_file()
+    if os.path.exists(history_file):
+        with open(history_file, 'r') as f:
+            return jsonify(json.load(f))
+    return jsonify([])
 
-import os
 if __name__ == '__main__':
     port = int(os.environ.get("PORT", 5000))
     app.run(host="0.0.0.0", port=port)
