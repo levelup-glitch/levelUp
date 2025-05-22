@@ -1,7 +1,10 @@
-from flask import Flask, request, send_file, jsonify
+from flask import Flask, request, send_file, jsonify, session
+from flask_cors import CORS
 import yt_dlp
 import os
 import json
+from uuid import uuid4
+
 
 app = Flask(__name__)
 HISTORY_FILE = 'history.json'
