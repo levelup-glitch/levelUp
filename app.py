@@ -7,7 +7,9 @@ from uuid import uuid4
 
 
 app = Flask(__name__)
-HISTORY_FILE = 'history.json'
+app.secret_key = os.urandom(24)  # Used to store secure session cookies
+CORS(app)
+
 
 # Ensure history file exists
 if not os.path.exists(HISTORY_FILE):
