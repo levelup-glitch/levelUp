@@ -1,0 +1,41 @@
+<!DOCTYPE html>
+<html>
+<head><title>YT Video Downloader</title></head>
+<body>
+  <h2>🎥 Download YouTube Videos</h2>
+  <input id="url" placeholder="Paste YouTube link here" size="50">
+  <select id="quality">
+    <option value="360">360p</option>
+    <option value="720">720p</option>
+    <option value="1080">1080p</option>
+  </select>
+  <button onclick="download()">Download</button>
+  <p id="status"></p>
+
+  <script>
+    async function download() {
+      const url = document.getElementById('url').value;
+      const quality = document.getElementById('quality').value;
+      document.getElementById('status').innerText = "⏳ Downloading...";
+
+      const res = await fetch('/download', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ url, quality })
+      });
+
+      if (res.ok) {
+        const blob = await res.blob();
+        const a = document.createElement('a');
+        a.href = URL.createObjectURL(blob);
+        a.download = "video.mp4";
+        a.click();
+        document.getElementById('status').innerText = "✅ Done!";
+      } else {
+        const error = await res.text();
+        document.getElementById('status').innerText = "❌ Error: " + error;
+      }
+    }
+  </script>
+</body>
+</html>
