@@ -1,10 +1,10 @@
 <!DOCTYPE html>
 <html>
 <head>
-  <title>YT Downloader</title>
+  <title>Harpy YouTube Downloader</title>
 </head>
 <body>
-  <h2>🎥 YouTube Downloader + Format Viewer</h2>
+  <h2>🎥 YouTube Downloader</h2>
 
   <input id="url" placeholder="Paste YouTube link" size="50">
   <button onclick="fetchFormats()">🔍 Show Formats</button>
@@ -15,7 +15,7 @@
   <p id="status"></p>
 
   <hr>
-  <h3>🕓 Download History (Last 20)</h3>
+  <h3>🕓 Download History (This Session Only)</h3>
   <ul id="historyList"></ul>
 
   <script>
@@ -38,7 +38,7 @@
       formats.forEach(f => {
         const opt = document.createElement("option");
         opt.value = f.format_id;
-        opt.textContent = `${f.resolution} - ${Math.round((f.filesize || 0)/1024/1024)} MB`;
+        opt.textContent = `${f.resolution} — ${Math.round((f.filesize || 0)/1024/1024)} MB`;
         select.appendChild(opt);
       });
 
@@ -75,7 +75,7 @@
       ul.innerHTML = "";
       list.reverse().forEach(item => {
         const li = document.createElement("li");
-        li.textContent = `${item.title} — ${item.resolution}p — ${item.size_MB} MB`;
+        li.textContent = `${item.title} — ${item.resolution} — ${item.size_MB} MB`;
         ul.appendChild(li);
       });
     }
